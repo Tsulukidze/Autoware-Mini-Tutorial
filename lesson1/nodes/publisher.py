@@ -3,17 +3,24 @@
 import rospy
 from std_msgs.msg import String
 
+
 class Publisher:
     def __init__(self):
-        # Internal variables
-        self.rate = ...
+        # Initialize the node
+        rospy.init_node('publisher')
 
-        # Publishers
-        self.pub = ...
+        # Internal variables
+        self.rate = rospy.Rate(2)
+
+        # Publisher
+        self.pub = rospy.Publisher('/message', String, queue_size=10)
 
     def run(self):
         while not rospy.is_shutdown():
-            ...
+            self.pub.publish("Hello world!")
+            self.rate.sleep()
+
 
 if __name__ == '__main__':
-    ...
+    publisher = Publisher()
+    publisher.run()
