@@ -25,7 +25,6 @@ class Publisher:
             self.pub.publish(self.message)
             self.rate.sleep()
 
-
 if __name__ == '__main__':
     publisher = Publisher()
     publisher.run()
