@@ -6,19 +6,15 @@ from std_msgs.msg import String
 
 class Publisher:
     def __init__(self):
-        # Initialize the node
-        rospy.init_node('publisher')
-
-        # Internal variables
-        self.rate = rospy.Rate(2)
-
-        # Publisher
-        self.pub = rospy.Publisher('/message', String, queue_size=10)
-
         # Parameters
         self.message = rospy.get_param('~message', 'Hello World!')
+        rate = rospy.get_param('~rate', 10.0)
 
-        self.rate = rospy.Rate(rospy.get_param('~rate', 10))
+        # Internal variables
+        self.rate = rospy.Rate(rate)
+
+        # Publishers
+        self.pub = rospy.Publisher('/message', String, queue_size=10)
 
     def run(self):
         while not rospy.is_shutdown():
@@ -26,5 +22,6 @@ class Publisher:
             self.rate.sleep()
 
 if __name__ == '__main__':
+    rospy.init_node('publisher')
     publisher = Publisher()
     publisher.run()
