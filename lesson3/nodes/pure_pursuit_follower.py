@@ -58,14 +58,12 @@ class PurePursuitFollower:
 
     def current_pose_callback(self, msg):
         if (self.path_linestring is None or self.distance_to_velocity_interpolator is None):
-            print(msg.pose.position.x, msg.pose.position.y)
             steering_angle = 0.0
             linear_velocity = 0.0
             linear_acceleration = -3.0
         else:
             current_pose = Point([msg.pose.position.x, msg.pose.position.y])
             d_ego_from_path_start = self.path_linestring.project(current_pose)
-            print(d_ego_from_path_start)
 
             linear_acceleration = 0.0
 
@@ -87,10 +85,7 @@ class PurePursuitFollower:
             ld = current_pose.distance(lookahead_point)
 
             # Calculate steering angle using the Pure Pursuit formula
-            alpha = np.arctan2(
-                np.sin(lookahead_heading - heading),
-                np.cos(lookahead_heading - heading)
-            )
+            alpha = lookahead_heading - heading
 
             steering_angle = np.arctan2(
                 2.0 * self.wheel_base * np.sin(alpha),

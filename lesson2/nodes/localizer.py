@@ -36,15 +36,9 @@ class Localizer:
 
     def transform_coordinates(self, msg):
 
-        print(msg.latitude, msg.longitude)
-        # TODO 2: Transform msg.latitude and msg.longitude to UTM coordinates using
-        #         self.transformer, then subtract self.origin_x and self.origin_y.
-
-        msg_x, msg_y =  self.transformer.transform(msg.latitude, msg.longitude)
-        msg_x = msg_x - self.origin_x
-        msg_y = msg_y - self.origin_y
-
-        print(msg_x, msg_y)
+        msg_x_pos, msg_y_pos =  self.transformer.transform(msg.latitude, msg.longitude)
+        msg_x_pos = msg_x_pos - self.origin_x
+        msg_y_pos = msg_y_pos - self.origin_y
 
         azimuth_correction = self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
         azimuth_correction = math.radians(msg.azimuth - azimuth_correction)
@@ -57,14 +51,14 @@ class Localizer:
         current_pose_msg = PoseStamped()
         current_pose_msg.header.stamp = msg.header.stamp
         current_pose_msg.header.frame_id = "map"
-        current_pose_msg.pose.position.x = msg_x
-        current_pose_msg.pose.position.y = msg_y
+        current_pose_msg.pose.position.x = msg_x_pos
+        current_pose_msg.pose.position.y = msg_y_pos
         current_pose_msg.pose.position.z = msg.height - self.undulation
         current_pose_msg.pose.orientation = orientation
         self.current_pose_pub.publish(current_pose_msg)
 
 
-        velocity = math.sqrt(msg_x ** 2 + msg_y ** 2)
+        velocity = math.sqrt(msg_x_pos ** 2 + msg_y_pos ** 2)
         current_twist_msg = TwistStamped()
         current_twist_msg.header.stamp = msg.header.stamp
         current_twist_msg.header.frame_id = "base_link"
@@ -76,9 +70,10 @@ class Localizer:
         current_transform_msg.header.stamp = msg.header.stamp
         current_transform_msg.header.frame_id = "map"
         current_transform_msg.child_frame_id = "base_link"
-        current_transform_msg.transform.translation.x = msg_x
-        current_transform_msg.transform.translation.y = msg_y
-        current_transform_msg.transform.translation.z = msg.height - self.undulation
+        current_transform_msg.transform.rotation = orientation
+        current_transform_msg.transform.translation.x = msg_x_pos
+        current_transform_msg.transform.translation.y = msg_y_pos
+        current_transform_msg.transform.translation.z = current_pose_msg.pose.position.z
         # publish transform
         self.br.sendTransform(current_transform_msg)
 
