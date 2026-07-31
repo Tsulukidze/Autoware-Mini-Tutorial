@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-import numpy as np
 import rospy
 import math
 from threading import Lock
@@ -101,35 +99,58 @@ class GlobalPlanner:
         remaining_distance = math.hypot(remaining_distance_2d.x, remaining_distance_2d.y)
 
         if remaining_distance < self.distance_to_goal_limit:
-            rospy.logwarn("%s - goal was reached", rospy.get_name())
             self.goal_point = None
             self.publish_lane_from_waypoints_list([])
+            rospy.loginfo("%s - goal was reached", rospy.get_name())
 
     def convert_laneletseq_to_waypoints_list(self, laneletseq):
         waypoints = []
 
-        for j, lanelet in enumerate(laneletseq):
-            # Get speed from lanelet attribute or use global speed limit. The speed limit is in km/h, convert to m/s for the Waypoint message.
-            speed =self.speed_limit / 3.6
+        # Index of the first waypoint belonging to the last lanelet
+        last_lanelet_start_idx = 0
 
-            # Iterate through the centerline points and create waypoints.
+        max_speed = self.speed_limit / 3.6  # m/s
+
+        for j, lanelet in enumerate(laneletseq):
+
+            # Remember where the last lanelet starts in the waypoint list
+            if j == len(laneletseq) - 1:
+                last_lanelet_start_idx = len(waypoints)
+
+            # Get speed from lanelet attribute (km/h) or use global speed limit
+            speed = max_speed
+            if "speed_ref" in lanelet.attributes:
+                try:
+                    lanelet_speed = float(lanelet.attributes["speed_ref"]) / 3.6
+                    speed = min(lanelet_speed, max_speed)
+                except (ValueError, TypeError):
+                    speed = max_speed
+
+            # Iterate through centerline points
             for i, point in enumerate(lanelet.centerline):
-                # Skip first point of every lanelet except the very first (endpoints overlap)
+
+                # Skip duplicate point between adjacent lanelets
                 if i == 0 and j != 0:
                     continue
+
                 waypoint = Waypoint()
                 waypoint.position.x = point.x
                 waypoint.position.y = point.y
                 waypoint.position.z = point.z
                 waypoint.speed = speed
+
                 waypoints.append(waypoint)
 
 
-        # 2nd approach
+        # Find the waypoint closest to the goal only within the last lanelet.  Option2
         if self.goal_point is not None and waypoints:
-            closest_idx = 0
+
+            closest_idx = last_lanelet_start_idx
             min_dist = float("inf")
-            for i, wp in enumerate(waypoints):
+
+            for i in range(last_lanelet_start_idx, len(waypoints)):
+                wp = waypoints[i]
+
                 dist = math.hypot(
                     wp.position.x - self.goal_point.x,
                     wp.position.y - self.goal_point.y,
@@ -142,7 +163,7 @@ class GlobalPlanner:
             # Truncate the path after the closest waypoint
             waypoints = waypoints[:closest_idx + 1]
 
-            # Snap the goal to that waypoint
+            # Snap the goal to the last waypoint
             last_wp = waypoints[-1]
             self.goal_point = BasicPoint2d(
                 last_wp.position.x,
