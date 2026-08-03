@@ -120,11 +120,8 @@ class GlobalPlanner:
             # Get speed from lanelet attribute (km/h) or use global speed limit
             speed = max_speed
             if "speed_ref" in lanelet.attributes:
-                try:
-                    lanelet_speed = float(lanelet.attributes["speed_ref"]) / 3.6
-                    speed = min(lanelet_speed, max_speed)
-                except (ValueError, TypeError):
-                    speed = max_speed
+                lanelet_speed = float(lanelet.attributes["speed_ref"]) / 3.6
+                speed = min(lanelet_speed, max_speed)
 
             # Iterate through centerline points
             for i, point in enumerate(lanelet.centerline):
@@ -145,20 +142,28 @@ class GlobalPlanner:
         # Find the waypoint closest to the goal only within the last lanelet.  Option2
         if self.goal_point is not None and waypoints:
 
+            # Initialize with the first waypoint in the last lanelet
             closest_idx = last_lanelet_start_idx
-            min_dist = float("inf")
+            first_wp = waypoints[last_lanelet_start_idx]
+            min_dist = math.hypot(
+                first_wp.position.x - self.goal_point.x,
+                first_wp.position.y - self.goal_point.y,
+            )
 
-            for i in range(last_lanelet_start_idx, len(waypoints)):
+
+            # Search the remaining waypoints in the last lanelet
+            for i in range(last_lanelet_start_idx + 1, len(waypoints)):
                 wp = waypoints[i]
-
+    
                 dist = math.hypot(
                     wp.position.x - self.goal_point.x,
                     wp.position.y - self.goal_point.y,
                 )
-
+    
                 if dist < min_dist:
                     min_dist = dist
                     closest_idx = i
+
 
             # Truncate the path after the closest waypoint
             waypoints = waypoints[:closest_idx + 1]
