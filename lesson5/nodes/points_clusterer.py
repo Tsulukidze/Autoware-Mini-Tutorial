@@ -30,7 +30,7 @@ class PointsClusterer:
         data = numpify(msg)
         points = structured_to_unstructured(data[['x', 'y', 'z']], dtype=np.float32)
         if len(points) ==0:
-            rospy.loginfo_once("%s - No Points", rospy.get_name())
+            rospy.logwarn("%s - No Points", rospy.get_name())
             return
 
         labels = self.clusterer.fit_predict(points)
