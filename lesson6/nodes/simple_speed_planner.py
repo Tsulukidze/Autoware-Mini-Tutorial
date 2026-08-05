@@ -215,7 +215,8 @@ class SimpleSpeedPlanner:
             )
 
             stopping_point_distance = (
-                target_distances[min_velocity_index]
+                    collision_point_distances[min_velocity_index]
+                    - collision_points[min_velocity_index]["distance_to_stop"]
             )
 
             collision_point_category = (
